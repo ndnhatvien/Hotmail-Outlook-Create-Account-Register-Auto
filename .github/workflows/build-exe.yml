@@ -1,0 +1,38 @@
+name: Build EXE
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'        # thay bằng phiên bản bạn đang dùng (6.0, 7.0, 8.0...)
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Publish Single File EXE (Self-contained)
+      run: |
+        dotnet publish -c Release -r win-x64 --self-contained true ^
+          /p:PublishSingleFile=true ^
+          /p:IncludeNativeLibrariesForSelfExtract=true ^
+          /p:PublishTrimmed=false ^
+          --output ./publish
+
+    - name: Upload Artifact (EXE)
+      uses: actions/upload-artifact@v4
+      with:
+        name: HotmailBot-EXE
+        path: ./publish/*.exe
+        retention-days: 30
