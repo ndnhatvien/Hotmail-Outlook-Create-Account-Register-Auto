@@ -1,10 +1,11 @@
-name: Build EXE
+name: Build EXE (.NET Framework)
 
 on:
   push:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+  workflow_dispatch:   # Cho phép chạy thủ công
 
 jobs:
   build:
@@ -14,25 +15,29 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '8.0.x'     # thay bằng phiên bản bạn đang dùng (8.0.x hoặc 6.0.x)
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
 
-    - name: Restore dependencies
-      run: dotnet restore
+    - name: Setup NuGet
+      uses: NuGet/setup-nuget@v2
 
-    - name: Publish as Single File EXE
+    - name: Restore NuGet Packages
+      run: nuget restore HotmailBot.sln
+
+    - name: Build Release
       run: |
-        dotnet publish -c Release -r win-x64 `
-          --self-contained true `
-          -p:PublishSingleFile=true `
-          -p:IncludeNativeLibrariesForSelfExtract=true `
-          --output ./publish
+        msbuild HotmailBot.sln `
+          /p:Configuration=Release `
+          /p:Platform="Any CPU" `
+          /p:OutputPath=bin\Release\ `
+          /m
 
-    - name: Upload Artifact
+    - name: Upload EXE Artifact
       uses: actions/upload-artifact@v4
       with:
         name: HotmailBot-EXE
-        path: ./publish/*.exe
+        path: |
+          Hotmail/bin/Release/**/*.exe
+          Hotmail/bin/Release/**/*.dll
+          Hotmail/bin/Release/**/*.config
         retention-days: 30
